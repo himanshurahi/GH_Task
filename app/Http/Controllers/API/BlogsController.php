@@ -57,7 +57,7 @@ class BlogsController extends Controller
 
         $blog = Blog::create($inputs);
 
-        return $this->successResponse($blog, 201);
+        return $this->successResponse($blog);
     }
 
     /**
@@ -66,6 +66,9 @@ class BlogsController extends Controller
     public function show(string $slug)
     {
         $blog = Blog::with('author', 'comments.user')->withCount('likes', 'comments')->where('slug', $slug)->first();
+        if (!$blog) {
+            return $this->errorResponse('Blog not found', 404);
+        }
         return $this->successResponse($blog);
     }
 
@@ -102,7 +105,7 @@ class BlogsController extends Controller
 
         $blog->update($inputs);
 
-        return $this->successResponse($blog, 201);
+        return $this->successResponse($blog);
     }
 
     /**
@@ -118,7 +121,7 @@ class BlogsController extends Controller
         }
 
         $blog->delete();
-        return $this->successResponse([], 204);
+        return $this->successResponse([]);
     }
 
     //-----------------------------------------------------------------------------------
