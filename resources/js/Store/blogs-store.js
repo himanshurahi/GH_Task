@@ -82,7 +82,7 @@ export const useBlogStore = defineStore({
         async createItem()
         {
             this.is_saving = true;
-            this.form.errors = {};
+            this.errors = {};
             try {
                 const response = await axios.post(ajax_url + '/blogs', this.item);
                 router.push({name : 'home'});
@@ -98,16 +98,9 @@ export const useBlogStore = defineStore({
         async updateItem()
         {
             this.is_saving = true;
-            this.form.errors = {};
+            this.errors = {};
             try {
-                const response = await axios.patch(
-                    ajax_url + '/blogs/' + this.item.slug,
-                    {...this.item, _method : 'put'},
-                    {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    });
+                const response = await axios.patch(ajax_url + '/blogs/' + this.item.slug, this.item);
                 router.push({name : 'home'});
             }
             catch (error) {
@@ -141,7 +134,7 @@ export const useBlogStore = defineStore({
                 this.itemActionAfter(id, response)
             }
             catch (error) {
-                console.log(error);
+                this.errors = error.response.data.errors;
             }
         },
         //------------------------
@@ -163,6 +156,7 @@ export const useBlogStore = defineStore({
                     }
                 });
             }
+            this.errors = {};
         },
         //------------------------
         async getItem(slug)
@@ -223,17 +217,12 @@ export const useBlogStore = defineStore({
         async addComment()
         {
             await this.itemAction(this.item.id, 'add_comment', this.comment);
+            this.comment.content = '';
         },
         //------------------------
         async deleteComment(comment_id)
         {
             await this.itemAction(this.item.id, 'delete_comment', {id : comment_id});
-        },
-        //------------------------
-        search()
-        {
-            this.filter.page = 1;
-            this.getList();
         },
         //------------------------
         resetFilter()
@@ -261,6 +250,17 @@ export const useBlogStore = defineStore({
                     'Content-Type': 'multipart/form-data'
                 }
             });
+        },
+        //------------------------
+        onSearchChange()
+        {
+            if(this.interval)
+            {
+                clearTimeout(this.interval);
+            }
+            this.interval = setTimeout(() => {
+                this.getList();
+            }, 700)
         }
 
     }

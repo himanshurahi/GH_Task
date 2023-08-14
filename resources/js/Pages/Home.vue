@@ -6,8 +6,7 @@
                 <router-link to="/create" class="btn btn-primary w-25">Create Blog</router-link>
                 <div class="mt-3 text-center">
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Search" v-model="blogsStore.filter.search" />
-                        <button class="btn btn-outline-secondary" type="button" @click="blogsStore.search">Search</button>
+                        <input type="text" class="form-control" placeholder="Search" @keydown="blogsStore.onSearchChange" v-model="blogsStore.filter.search" />
                         <button class="btn btn-outline-secondary" type="button" @click="blogsStore.resetFilter">Reset</button>
                     </div>
                     <div>

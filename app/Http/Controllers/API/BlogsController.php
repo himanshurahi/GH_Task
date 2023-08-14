@@ -16,10 +16,7 @@ class BlogsController extends Controller
         $data = [];
         $data['users'] = User::select('id', 'name')->get();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $data
-        ], 200);
+        return $this->successResponse($data);
     }
 
     /**
@@ -33,10 +30,7 @@ class BlogsController extends Controller
         $list->orderBy('id', 'desc');
         $list = $list->paginate(10);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $list
-        ], 200);
+        return $this->successResponse($list);
     }
 
     /**
@@ -63,11 +57,7 @@ class BlogsController extends Controller
 
         $blog = Blog::create($inputs);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $blog
-        ], 200);
-
+        return $this->successResponse($blog, 201);
     }
 
     /**
@@ -76,10 +66,7 @@ class BlogsController extends Controller
     public function show(string $slug)
     {
         $blog = Blog::with('author', 'comments.user')->withCount('likes', 'comments')->where('slug', $slug)->first();
-        return response()->json([
-            'success' => true,
-            'data'    => $blog
-        ], 200);
+        return $this->successResponse($blog);
     }
 
     /**
@@ -103,21 +90,19 @@ class BlogsController extends Controller
 
 
         $blog = Blog::where('slug', $slug)->first();
+
+        $this->authorize('update',[$blog,  auth()->user()]);
+
+
         if (!$blog) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Blog not found'
-            ], 404);
+            return $this->errorResponse('Blog not found', 404);
         }
 
         $inputs['slug'] = Str::slug($inputs['title']);
 
         $blog->update($inputs);
 
-        return response()->json([
-            'success' => true,
-            'data'    => $blog
-        ], 200);
+        return $this->successResponse($blog, 201);
     }
 
     /**
@@ -125,11 +110,15 @@ class BlogsController extends Controller
      */
     public function destroy(string $id)
     {
-        Blog::destroy($id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Blog deleted successfully'
-        ], 200);
+        $blog = Blog::find($id);
+        $this->authorize('delete',[$blog,  auth()->user()]);
+
+        if (!$blog) {
+            return $this->errorResponse('Blog not found', 404);
+        }
+
+        $blog->delete();
+        return $this->successResponse([], 204);
     }
 
     //-----------------------------------------------------------------------------------
@@ -196,9 +185,22 @@ class BlogsController extends Controller
         $blog->loadCount('likes', 'comments');
         $blog->load('comments.user');
 
+        return $this->successResponse($blog);
+    }
+    //-----------------------------------------------------------------------------------
+    private function successResponse($data, $statusCode = 200)
+    {
         return response()->json([
             'success' => true,
-            'data'    => $blog
-        ], 200);
+            'data' => $data
+        ], $statusCode);
+    }
+
+    private function errorResponse($message, $statusCode)
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message
+        ], $statusCode);
     }
 }

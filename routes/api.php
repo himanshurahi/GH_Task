@@ -2,6 +2,9 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\BlogsController;
+use App\Http\Controllers\HomeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,18 +17,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::post('/upload', [HomeController::class, 'upload']);
+
+    Route::get('blogs/assets', [BlogsController::class, 'getAssets']);
+    Route::resource('blogs', BlogsController::class);
+    Route::post('blogs/{id}/action', [BlogsController::class, 'itemAction']);
 });
 
-Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
-Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
-Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
-
-Route::post('/upload', [App\Http\Controllers\HomeController::class, 'upload'])->middleware('auth:sanctum');
-
-
-Route::get('blogs/assets', [App\Http\Controllers\Api\BlogsController::class, 'getAssets'])->middleware('auth:sanctum');
-Route::resource('blogs', App\Http\Controllers\API\BlogsController::class)->middleware('auth:sanctum');
-Route::post('blogs/{id}/action', [App\Http\Controllers\Api\BlogsController::class, 'itemAction'])->middleware('auth:sanctum');
-
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);

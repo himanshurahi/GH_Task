@@ -3,7 +3,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             Authors
         </div>
-        <div class="card-body">
+        <div class="card-body" v-if="store.assets.data && store.assets.data.users">
             <ul>
                 <li v-for="user in store.assets.data.users">
                     <input type="checkbox"

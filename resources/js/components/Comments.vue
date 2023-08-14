@@ -21,7 +21,9 @@
             <form @submit.prevent="store.addComment">
                 <div class="mb-3">
                     <label for="comment" class="form-label">Comment</label>
-                    <textarea v-model="store.comment.content" class="form-control" id="comment" rows="3" ></textarea>
+                    <textarea v-model="store.comment.content" class="form-control" id="comment" rows="3"
+                    :class="{'is-invalid': store.errors['data.content']}"
+                    ></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary" >Add Comment</button>
             </form>
