@@ -30,12 +30,15 @@ import { faThumbsUp } from '@fortawesome/free-solid-svg-icons'
 // another thumbs up icon
 import { faThumbsUp as faThumbsUpRegular } from '@fortawesome/free-regular-svg-icons'
 import { faComments }  from '@fortawesome/free-solid-svg-icons'
+import {faTrash} from "@fortawesome/free-solid-svg-icons";
+import {faPencil} from "@fortawesome/free-solid-svg-icons";
 
 /* add icons to the library */
 library.add(
 faThumbsUp,
-faComments,
-    faThumbsUpRegular
+faComments, faThumbsUpRegular,
+faTrash,
+faPencil
 )
 
 app.component('app', App);

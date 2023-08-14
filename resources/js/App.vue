@@ -24,21 +24,16 @@
                        </li>
 
                        <li class="nav-item"  v-if="!authStore.user">
-                           <a class="nav-link" href="/register">Register</a>
+                           <router-link class="nav-link" to="/register">Register</router-link>
                        </li>
                        <li class="nav-item dropdown" v-if="authStore.user">
                            <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" >
                                {{ authStore.user.name }}
                            </a>
                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                               <a class="dropdown-item" href="/"
-                                  onclick="event.preventDefault();
-                                     document.getElementById('logout-form').submit();">
+                               <div class="dropdown-item" @click="authStore.logout">
                                    Logout
-                               </a>
-
-                               <form id="logout-form" action="/" method="POST" class="d-none">
-                               </form>
+                               </div>
                            </div>
                        </li>
                    </ul>

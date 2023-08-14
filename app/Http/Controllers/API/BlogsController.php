@@ -10,18 +10,32 @@ use Illuminate\Support\Str;
 
 class BlogsController extends Controller
 {
+
+    public function getAssets()
+    {
+        $data = [];
+        $data['users'] = User::select('id', 'name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data
+        ], 200);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $blogs = Blog::with('author')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $list = Blog::with('author')->withCount('likes', 'comments');
+        $list->searchFilter(request()->search);
+        $list->authorFilter(request()->author);
+        $list->orderBy('id', 'desc');
+        $list = $list->paginate(10);
 
         return response()->json([
             'success' => true,
-            'data'    => $blogs
+            'data'    => $list
         ], 200);
     }
 
@@ -49,15 +63,23 @@ class BlogsController extends Controller
 
         $blog = Blog::create($inputs);
 
+        return response()->json([
+            'success' => true,
+            'data'    => $blog
+        ], 200);
 
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $slug)
     {
-        //
+        $blog = Blog::with('author', 'comments.user')->withCount('likes', 'comments')->where('slug', $slug)->first();
+        return response()->json([
+            'success' => true,
+            'data'    => $blog
+        ], 200);
     }
 
     /**
@@ -71,9 +93,31 @@ class BlogsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $slug)
     {
-        //
+        $inputs = $request->all();
+        $request->validate([
+            'title'       => 'required',
+            'content'     => 'required',
+        ]);
+
+
+        $blog = Blog::where('slug', $slug)->first();
+        if (!$blog) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Blog not found'
+            ], 404);
+        }
+
+        $inputs['slug'] = Str::slug($inputs['title']);
+
+        $blog->update($inputs);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $blog
+        ], 200);
     }
 
     /**
@@ -81,24 +125,80 @@ class BlogsController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        Blog::destroy($id);
+        return response()->json([
+            'success' => true,
+            'message' => 'Blog deleted successfully'
+        ], 200);
     }
 
-    public function itemAction(Request $request, $type, $id)
+    //-----------------------------------------------------------------------------------
+    private static function itemActionValidation($request, $action)
     {
-        switch ($type) {
+        $rules = [];
+        $rules['data'] = 'nullable|array';
+        $rules['action'] = 'required';
+        $messages = [];
+        if($action === 'add_comment')
+        {
+            $rules['data.content'] = 'required';
+            $messages = [
+                'data.content.required' => 'Comment content is required',
+            ];
+        }
+        $validator = \Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+    }
+    //-----------------------------------------------------------------------------------
+    public function itemAction(Request $request, $id)
+    {
+
+        $inputs = $request->all();
+        $action = $inputs['action'];
+        $data = $inputs['data'] ?? [];
+
+        $validator = self::itemActionValidation($request, $action);
+
+        if($validator) {
+            return $validator;
+        }
+
+        $blog = Blog::with('author', 'comments.user')
+            ->withCount('likes', 'comments')
+            ->where('id', $id)->first();
+        switch ($action) {
             case 'like':
-                $blog = Blog::find($id);
-                $blog->likes = $blog->likes + 1;
-                $blog->save();
+                $blog->likes()->attach(auth()->user()->id);
                 break;
             case 'dislike':
-                $blog = Blog::find($id);
-                $blog->dislikes = $blog->dislikes + 1;
-                $blog->save();
+                $blog->likes()->detach(auth()->user()->id);
+                break;
+            case 'add_comment':
+                $blog->comments()->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => $data['content']
+                ]);
+                break;
+            case 'delete_comment':
+                $blog->comments()->where('id', $data['id'])->delete();
                 break;
             default:
                 break;
         }
+
+        $blog->loadCount('likes', 'comments');
+        $blog->load('comments.user');
+
+        return response()->json([
+            'success' => true,
+            'data'    => $blog
+        ], 200);
     }
 }

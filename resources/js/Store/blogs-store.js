@@ -10,15 +10,40 @@ export const useBlogStore = defineStore({
         is_list_loaded : false,
         item : {},
         errors : {},
+        is_saving : false,
+        is_item_loaded : false,
+        comment : {
+            content : '',
+        },
+        filter : {
+            search : '',
+            page : 1,
+            author : '',
+        },
+        interval : null,
+        assets : [],
     }),
     getters: {},
     actions: {
         //------------------------
-        async fetchBlogs()
+        async getAssets()
         {
             try {
-                const response = await axios.get(ajax_url + '/blogs');
-                this.list = response.data;
+                const response = await axios.get(ajax_url + '/blogs/assets');
+                console.log(response.data);
+                this.assets = response.data;
+            }
+            catch (error) {
+                console.log(error);
+            }
+        },
+        //------------------------
+        async getList()
+        {
+            this.is_list_loaded = false;
+            try {
+                const response = await axios.get(ajax_url + '/blogs' + this.getFilterQuery());
+                this.list = response.data.data;
                 this.is_list_loaded = true;
             }
             catch (error) {
@@ -26,15 +51,70 @@ export const useBlogStore = defineStore({
             }
         },
         //------------------------
-        async createBlog()
+        getFilterQuery()
         {
+            let query = '?';
+            let index = 0;
+            Object.keys(this.filter).forEach((key) => {
+                if(this.filter[key])
+                {
+                    if(index !== 0)
+                    {
+                        query += '&';
+                    }
+                    query += key + '=' + this.filter[key];
+                    index++;
+                }
+            });
+            router.push({ query: this.filter });
+            return query;
+        },
+        //------------------------
+        updateFilterFromQuery()
+        {
+            const query = router.currentRoute.value.query;
+            if(query)
+            {
+                this.filter = Object.assign(this.filter, query);
+            }
+        },
+        //------------------------
+        async createItem()
+        {
+            this.is_saving = true;
+            this.form.errors = {};
             try {
                 const response = await axios.post(ajax_url + '/blogs', this.item);
-                this.list = response.data;
                 router.push({name : 'home'});
             }
             catch (error) {
                 this.errors = error.response.data.errors;
+            }
+            finally {
+                this.is_saving = false;
+            }
+        },
+        //------------------------
+        async updateItem()
+        {
+            this.is_saving = true;
+            this.form.errors = {};
+            try {
+                const response = await axios.patch(
+                    ajax_url + '/blogs/' + this.item.slug,
+                    {...this.item, _method : 'put'},
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                router.push({name : 'home'});
+            }
+            catch (error) {
+                this.errors = error.response.data.errors;
+            }
+            finally {
+                this.is_saving = false;
             }
         },
         //------------------------
@@ -53,6 +133,136 @@ export const useBlogStore = defineStore({
             }
             return errorString;
         },
+        //------------------------
+        async itemAction(id, action, data = [])
+        {
+            try {
+                const response = await axios.post(ajax_url + '/blogs/' + id + '/action', {action : action, data : data});
+                this.itemActionAfter(id, response)
+            }
+            catch (error) {
+                console.log(error);
+            }
+        },
+        //------------------------
+        itemActionAfter(id, response)
+        {
+            if(this.item)
+            {
+                if(this.item.id === id)
+                {
+                    this.item = response.data.data;
+                }
+            }
+
+            if(this.list && this.list.data)
+            {
+                this.list.data.map((item, index) => {
+                    if (item.id === id) {
+                        this.list.data[index] = response.data.data;
+                    }
+                });
+            }
+        },
+        //------------------------
+        async getItem(slug)
+        {
+            this.is_item_loaded = false;
+            try {
+                const response = await axios.get(ajax_url + '/blogs/' + slug);
+                this.item = response.data.data;
+            }
+            catch (error) {
+                console.log(error);
+            }
+            finally {
+                this.is_item_loaded = true;
+            }
+        },
+        //------------------------
+        async onFileChange(e)
+        {
+            const file = e.target.files[0];
+            if(file) {
+                const { data } = await this.uploadImage(file);
+                this.item.image = data.data;
+            }
+        },
+        //------------------------
+        async deleteItem(id)
+        {
+            try {
+                const response = await axios.delete(ajax_url + '/blogs/' + id);
+                this.deleteItemAfter(id, response);
+            }
+            catch (error) {
+                console.log(error);
+            }
+        },
+        //------------------------
+        async deleteItemAfter(id, response)
+        {
+            if(this.list && this.list.data)
+            {
+                this.list.data.map((item, index) => {
+                    if (item.id === id) {
+                        this.list.data.splice(index, 1);
+                    }
+                });
+            }
+        },
+        //------------------------
+        confirmDelete(id)
+        {
+            if(confirm('Are you sure you want to delete this item?'))
+            {
+                this.deleteItem(id);
+            }
+        },
+        //------------------------
+        async addComment()
+        {
+            await this.itemAction(this.item.id, 'add_comment', this.comment);
+        },
+        //------------------------
+        async deleteComment(comment_id)
+        {
+            await this.itemAction(this.item.id, 'delete_comment', {id : comment_id});
+        },
+        //------------------------
+        search()
+        {
+            this.filter.page = 1;
+            this.getList();
+        },
+        //------------------------
+        resetFilter()
+        {
+            this.filter = {
+                search : '',
+                page : 1,
+                author : '',
+            }
+
+            this.getList();
+        },
+        //------------------------
+        toEdit(item)
+        {
+            router.push({name : 'edit', params : {slug : item.slug}});
+        },
+        //------------------------
+        uploadImage(file)
+        {
+            const formData = new FormData();
+            formData.append('image', file);
+            return axios.post(ajax_url + '/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
+
     }
 })
 

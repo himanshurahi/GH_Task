@@ -42,4 +42,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+    //-----------------------------------------------------------------------------------
+    public function likes()
+    {
+        return $this->belongsToMany(Blog::class, 'blogs_like', 'user_id', 'blog_id');
+    }
 }

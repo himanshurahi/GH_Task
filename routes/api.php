@@ -19,5 +19,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
+Route::post('/register', [App\Http\Controllers\Api\AuthController::class, 'register']);
+Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+Route::post('/upload', [App\Http\Controllers\HomeController::class, 'upload'])->middleware('auth:sanctum');
+
+
+Route::get('blogs/assets', [App\Http\Controllers\Api\BlogsController::class, 'getAssets'])->middleware('auth:sanctum');
 Route::resource('blogs', App\Http\Controllers\API\BlogsController::class)->middleware('auth:sanctum');
+Route::post('blogs/{id}/action', [App\Http\Controllers\Api\BlogsController::class, 'itemAction'])->middleware('auth:sanctum');
+

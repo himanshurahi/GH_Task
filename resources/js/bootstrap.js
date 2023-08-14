@@ -10,7 +10,11 @@ import axios from 'axios';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-window.axios.defaults.headers.common['Authorization'] = 'Bearer ' + localStorage.getItem('token');
+window.axios.interceptors.request.use(function (config) {
+    const token = localStorage.getItem('token');
+    config.headers.Authorization = token ? `Bearer ${token}` : '';
+    return config;
+});
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
  * for events that are broadcast by Laravel. Echo and event broadcasting

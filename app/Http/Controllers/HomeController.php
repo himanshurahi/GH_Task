@@ -25,4 +25,21 @@ class HomeController extends Controller
     {
         return view('home');
     }
+
+    //-----------------------------------------------------------------------------------
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        $imageName = auth()->user()->id . '_blog_image_' . time() . '.' . $request->image->extension();
+
+        $request->image->storeAs('public/images', $imageName);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $imageName
+        ], 200);
+    }
 }

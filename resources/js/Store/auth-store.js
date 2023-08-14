@@ -13,7 +13,6 @@ export const useAuthStore = defineStore({
             loading: false
         },
         user: null,
-
     }),
     getters: {},
     actions: {
@@ -62,6 +61,37 @@ export const useAuthStore = defineStore({
                 });
             }
             return errorString;
+        },
+        //------------------------
+        async register()
+        {
+            this.form.errors = {};
+            this.form.loading = true;
+            try {
+                const response = await axios.post(ajax_url + '/register', this.form);
+                localStorage.setItem('token', response.data.token);
+                this.user = response.data.user;
+                router.push({name: 'home'});
+            }
+            catch (error) {
+                this.form.errors = error.response?.data.errors;
+            }
+            finally {
+                this.form.loading = false;
+            }
+        },
+        //------------------------
+        async logout()
+        {
+            try {
+                await axios.post(ajax_url + '/logout');
+                localStorage.removeItem('token');
+                this.user = null;
+                router.push({name: 'login'});
+            }
+            catch (error) {
+                console.log(error);
+            }
         }
     }
 })
